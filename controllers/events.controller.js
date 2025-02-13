@@ -1,50 +1,25 @@
 const { successMessages, errorMessages } = require("../helpers/message");
-
 const managerServices = require("../services/manager.service");
 const employeeServices = require("../services/employee.service");
 const eventServices = require("../services/event.service");
 const axios = require("axios");
-const base64 = require("base-64");
 
 require("dotenv").config();
-
-const getZoomAccessToken = async () => {
-  try {
-    const response = await axios.post("https://zoom.us/oauth/token", null, {
-      params: {
-        grant_type: "account_credentials",
-        account_id: process.env.ZOOM_ACCOUNT_ID,
-      },
-      headers: {
-        Authorization: `Basic ${base64.encode(
-          `${process.env.ZOOM_CLIENT_ID}:${process.env.ZOOM_CLIENT_SECRET}`
-        )}`,
-        "Content-Type": "application/json",
-      },
-    });
-    return response.data.access_token;
-  } catch (error) {
-    console.error("Error fetching access token:", error.message);
-    throw error;
-  }
-};
 
 exports.createEvent = async (req, res) => {
   try {
     const { details, location, pricing } = req.body;
-
     const manager = await managerServices.findManagerById(req.user._id);
-
     if (!manager) {
       return res.status(404).json({ error: errorMessages.managerNotFound });
     }
-
-    const accessToken = await getZoomAccessToken();
-
+    const accessToken = process.env.ACCESS_TOKEN;
     const zoomResponse = await axios.post(
       "https://api.zoom.us/v2/users/me/meetings",
       {
+        topic: details.topic || "Meeting",
         type: 2,
+        start_time: details.start_time || new Date().toISOString(),
         timezone: "Asia/Kolkata",
         password: "12345",
         settings: {
@@ -78,8 +53,11 @@ exports.createEvent = async (req, res) => {
 
     await managerServices.findManagerAndUpdateEvent(manager._id, newEvent._id);
 
-    res.status(201).json({ message: successMessages.eventCreated });
+    res.status(201).json({
+      message: successMessages.eventCreated,
+    });
   } catch (error) {
+    console.error("Error creating event:", error);
     res.status(500).json({
       error: errorMessages.internalServerError,
       details: error.message,

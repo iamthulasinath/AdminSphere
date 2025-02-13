@@ -1,16 +1,21 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const cors = require("cors");
+const app = express();
+const abcRoutes = require("./routes/abc.route");
+const authController = require("./controllers/auth.controller");
+
 require("dotenv").config();
 require("./cron/updateEventStatus");
-const app = express();
-
-const abcRoutes = require("./routes/abc.route");
 
 app.use(express.json());
+app.use(cors());
 app.use("/abc", abcRoutes);
 
-const PORT = process.env.PORT;
+app.get("/zoom/authorize", authController.authorizeZoom);
+app.get("/zoom/callback", authController.zoomCallback);
 
+const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

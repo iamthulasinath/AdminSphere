@@ -2,15 +2,11 @@ const express = require("express");
 const router = express.Router();
 const {
   getDetails,
-  getEmployees,
   deleteEmployee,
-  deleteAnyEmployee,
-  editMyEmployeeDetails,
   updateDetails,
   addEmployee,
   viewEmployeesUnderManager,
 } = require("../controllers/abc.controller");
-//const {createMeeting, deleteMeeting, updateMeeting,getMeetingDetails} = require("../controllers/meeting.controller");
 const { auth, isManager } = require("../middleware/auth");
 const {
   createEvent,
@@ -43,16 +39,5 @@ router.get("/get-events", auth, isManager, getEvents);
 router.put("/update-event/:eventId", auth, isManager, updateEvent);
 
 router.delete("/delete-event/:eventId", auth, isManager, deleteEvent);
-
-/*
-router.get("/get-employees", auth, isManager, getEmployees);
-router.delete("/delete-any-employee/:id", auth, isManager, deleteAnyEmployee);
-*/
-
-/*
-router.delete("/delete-meeting/:meetingId", auth, isManager, deleteMeeting);
-router.get("/meetings/:meetingId", getMeetingDetails)
-router.put("/update-meeting/:meetingId", auth, isManager, updateMeeting)
-*/
 
 module.exports = router;

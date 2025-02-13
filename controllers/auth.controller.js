@@ -1,8 +1,11 @@
-require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const axios = require("axios");
+const querystring = require("querystring");
+require("dotenv").config();
 
 const { errorMessages, successMessages } = require("../helpers/message");
+
 const {
   validateEmail,
   validateName,
@@ -92,5 +95,51 @@ exports.login = async (req, res) => {
     res
       .status(500)
       .json({ error: errorMessages.loginFailed, details: error.message });
+  }
+};
+
+exports.authorizeZoom = (req, res) => {
+  const authUrl = `https://zoom.us/oauth/authorize?response_type=code&client_id=${process.env.ZOOM_CLIENT_ID}&redirect_uri=${process.env.ZOOM_REDIRECT_URI}`;
+  res.redirect(authUrl);
+};
+
+exports.zoomCallback = async (req, res) => {
+  const { code } = req.query;
+
+  if (!code) {
+    return res
+      .status(400)
+      .json({ error: errorMessages.AuthorizationCodeMissingError });
+  }
+
+  try {
+    const tokenUrl = "https://zoom.us/oauth/token";
+    const authHeader = Buffer.from(
+      `${process.env.ZOOM_CLIENT_ID}:${process.env.ZOOM_CLIENT_SECRET}`
+    ).toString("base64");
+    const body = querystring.stringify({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: process.env.ZOOM_REDIRECT_URI,
+    });
+
+    const response = await axios.post(tokenUrl, body, {
+      headers: {
+        Authorization: `Basic ${authHeader}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    });
+
+    const { access_token, refresh_token, expires_in } = response.data;
+
+    res.json({
+      message: successMessages.OAuthsSuccessfull,
+      access_token,
+      refresh_token,
+      expires_in,
+    });
+  } catch (error) {
+    console.error("Error exchanging OAuth token:", error.message);
+    res.status(500).json({ error: errorMessages.callBackError });
   }
 };
